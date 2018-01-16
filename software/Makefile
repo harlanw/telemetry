@@ -1,2 +1,2 @@
 default:
-	gcc main.c -lftdi1 -o console
+	gcc main.c -lftdi1 -o telemetry

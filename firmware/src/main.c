@@ -1,4 +1,4 @@
-#include "sys/system.h"
+#include "kernel/sys/system.h"
 
 int
 main(void)

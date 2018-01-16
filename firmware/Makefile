@@ -32,8 +32,8 @@ CFLAGS += -g $(OPTIMIZATION) $(CDEFS)
 
 SRC  = main.c
 SRC += kernel/kernel.c
+SRC += kernel/sys/panic.c
 SRC += serial/uart.c
-SRC += sys/panic.c
 SRC_PATH = ./src
 
 OBJ = $(addsuffix .o, $(SRC))
