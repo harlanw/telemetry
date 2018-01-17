@@ -1,9 +1,9 @@
 #include "attributes.h"
 #include "commands.h"
-#include "telemetry.h"
-#include "mutex_queue.h"
 #include "terminal/error.h"
 #include "terminal/terminal.h"
+#include "threading/mutex_queue.h"
+#include "threading/telemetry.h"
 
 #include <getopt.h>
 #include <pthread.h>

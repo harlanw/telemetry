@@ -24,7 +24,7 @@ CFLAGS += -g $(OPTIMIZATION) $(CDEFS)
 LDFLAGS = -lftdi1 -lpthread
 
 SRC  = main.c commands.c
-SRC += telemetry.c mutex_queue.c
+SRC += threading/telemetry.c threading/mutex_queue.c
 SRC += terminal/terminal.c
 SRC_PATH = ./src
 
