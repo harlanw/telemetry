@@ -1,2 +1,6 @@
 software/build/*
+software/docs/*
+!software/docs/Doxyfile
 firmware/build/*
+firmware/docs/*
+!firmware/docs/Doxyfile

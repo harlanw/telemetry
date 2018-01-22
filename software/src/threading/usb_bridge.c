@@ -1,4 +1,4 @@
-#include "telemetry.h"
+#include "threading/usb_bridge.h"
 
 #include "mutex_queue.h"
 #include "terminal/colors.h"
@@ -12,7 +12,7 @@ struct ftdi_context *ftdi;
 struct ftdi_version_info version;
 
 _Bool
-telemetry_init(int iface, int vid, int pid, int baudrate)
+usb_bridge_init(int iface, int vid, int pid, int baudrate)
 {
 	int status;
 
@@ -87,23 +87,22 @@ telemetry_init(int iface, int vid, int pid, int baudrate)
 }
 
 void
-telemetry_destroy(void)
+usb_bridge_destroy(void)
 {
 	ftdi_free(ftdi);
 }
 
 void *
-telemetry_monitor(void *arg)
+usb_bridge_monitor(void *arg)
 {
 	int read;
 	char buffer[1024];
-	struct timespec ts;
-
-	ts.tv_sec = 0;
-	ts.tv_nsec = 100000000;
+	struct timespec ts = { 0, USB_BRIDGE_SLEEP_TIME_MS };
 
 	while (true)
 	{
+		const char *next_cmd;
+
 		#pragma GCC diagnostic push
 		#pragma GCC diagnostic ignored "-Wpointer-sign"
 		read = ftdi_read_data(ftdi, buffer, sizeof(buffer));
@@ -118,6 +117,12 @@ telemetry_monitor(void *arg)
 			terminal_write("\r" BOLD "kernel - " RESET, sizeof("\r" BOLD "kernel - " RESET));
 			terminal_write(buffer, read);
 			terminal_write("$ ", sizeof("$ "));
+		}
+
+		next_cmd = dequeue(&xproc_cmd_list);
+		if (next_cmd)
+		{
+			terminal_writef("nc: %s\n", next_cmd);
 		}
 	}
 

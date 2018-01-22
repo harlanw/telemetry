@@ -28,12 +28,12 @@ CFLAGS  = -std=c99 -Wall -Wno-unused -I./src
 CFLAGS += -mmcu=$(TARGET)
 CFLAGS += -g $(OPTIMIZATION) $(CDEFS)
 
-#LDFLAGS
-
 SRC  = main.c
 SRC += kernel/kernel.c
+SRC += kernel/sch/tasks.c
+SRC += kernel/sch/tasks.S
 SRC += kernel/sys/panic.c
-SRC += serial/uart.c
+SRC += kernel/serial/uart.c
 SRC_PATH = ./src
 
 OBJ = $(addsuffix .o, $(SRC))
@@ -68,13 +68,21 @@ $(BUILD_PATH)/%.c.o: $(SRC_PATH)/%.c
 	@printf "$(BLD)CC$(RST)\t%s %s\n" $@ $<
 	@$(CC) $(CFLAGS) -MMD -c -o $@ $<
 
+-include $(DEPS)
+$(BUILD_PATH)/%.S.o: $(SRC_PATH)/%.S
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -MMD -c -o $@ $<
+
 clean:
 	@rm -rf $(BIN) $(DEPS) $(OBJ_PATH)
 	@printf "$(BLD)RM$(RST)"
 	@printf "\t%s %s\n" $(BIN) $(DEPS) $(OBJ_PATH)
 
+docs:
+	doxygen ./docs/Doxyfile
+
 dump: $(ELF)
-	@$(DP) -m $(TARGET_ARCH) -S $^ > $^.dump
+	$(DP) -m $(TARGET_ARCH) -S $^ > $^.dump
 	@echo "Dumping $^ $(TARGET):$(TARGET_ARCH)"
 
-.PHONY: clean debug dump flash
+.PHONY: clean debug docs dump flash
