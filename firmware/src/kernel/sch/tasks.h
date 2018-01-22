@@ -71,4 +71,7 @@ ktask_add(ktask_fn_t fn, void *spe);
 void
 ktask_schedule(void);
 
+extern void
+ktask_dispatch(ktask_t *task);
+
 #endif

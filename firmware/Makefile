@@ -21,6 +21,8 @@ ISP_TARGET = m644p
 TARGET = atmega644pa
 TARGET_ARCH = avr5
 
+F_CPU = 1000000
+
 CDEFS_LIST = DEBUG UART_USE_2X
 CDEFS = $(addprefix -D, $(CDEFS_LIST))
 
@@ -30,8 +32,7 @@ CFLAGS += -g $(OPTIMIZATION) $(CDEFS)
 
 SRC  = main.c
 SRC += kernel/kernel.c
-SRC += kernel/sch/tasks.c
-SRC += kernel/sch/tasks.S
+SRC += kernel/sch/tasks.c kernel/sch/task_dispatch.S
 SRC += kernel/sys/panic.c
 SRC += kernel/serial/uart.c
 SRC_PATH = ./src
@@ -85,4 +86,7 @@ dump: $(ELF)
 	$(DP) -m $(TARGET_ARCH) -S $^ > $^.dump
 	@echo "Dumping $^ $(TARGET):$(TARGET_ARCH)"
 
-.PHONY: clean debug docs dump flash
+sim:
+	simavr -f $(F_CPU) -m atmega644 $(ELF)
+
+.PHONY: clean debug docs dump flash sim

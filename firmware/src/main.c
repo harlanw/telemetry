@@ -41,7 +41,6 @@ main(void)
 {
 	ktask_add(&user_process, &user_proc_stack[127]);
 	kfinalize();
-	PANIC("ASD");
 
 	return 0;
 }
