@@ -21,9 +21,9 @@ ISP_TARGET = m644p
 TARGET = atmega644pa
 TARGET_ARCH = avr5
 
-F_CPU = 1000000
+F_CPU = 1000000UL
 
-CDEFS_LIST = DEBUG UART_USE_2X
+CDEFS_LIST = DEBUG UART_USE_2X F_CPU=$(F_CPU)
 CDEFS = $(addprefix -D, $(CDEFS_LIST))
 
 CFLAGS  = -std=c99 -Wall -Wno-unused -I./src
@@ -32,9 +32,10 @@ CFLAGS += -g $(OPTIMIZATION) $(CDEFS)
 
 SRC  = main.c
 SRC += kernel/kernel.c
-SRC += kernel/sch/tasks.c kernel/sch/task_dispatch.S
+SRC += kernel/dev/modem.c
+SRC += kernel/driver/xbs2.c
 SRC += kernel/sys/panic.c
-SRC += kernel/serial/uart.c
+SRC += kernel/serial/spi.c kernel/serial/uart.c
 SRC_PATH = ./src
 
 OBJ = $(addsuffix .o, $(SRC))
