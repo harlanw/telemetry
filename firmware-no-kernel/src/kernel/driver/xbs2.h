@@ -56,7 +56,7 @@ xbs2_frame_t
 xbs2_get_frame_by_id(uint8_t id);
 
 uint8_t
-xbs2_emit(uint8_t pkt[], uint8_t argc);
+xbs2_emit(uint8_t pkt[], uint16_t length);
 
 uint8_t
 xbs2_at(uint8_t cmd [static 2],

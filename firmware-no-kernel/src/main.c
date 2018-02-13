@@ -15,10 +15,10 @@
 #include "kernel/sys/system.h"
 #include "kernel/version.h"
 #include "kernel/dev/modem.h"
-#include "kernel/driver/xbs2.h"
 #include "kernel/serial/spi.h"
 #include "kernel/serial/uart.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <avr/io.h>
 #include <util/delay.h>
@@ -34,7 +34,8 @@
 uint8_t seek_frame = 0;
 modem_t modem;
 
-const char *str = "{humid:0.18,temp:65.3,bright:false,nmea:\"$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47\",\"imu\": {\"error\": \"disconnected\"}}\n\n";
+const char *
+str = "{ \"error\": 0 }";
 
 void
 user_process(void)
@@ -46,17 +47,17 @@ user_process(void)
 
 	modem_create(&modem);
 	modem.connect(NULL, 0);
+	modem.write(str, strlen(str));
 
 	while (modem.update() != -1)
 	{
 		if (modem.connection != MODEM_JOINED)
 		{
-			printf("<USER> %s", str);
 			PANIC("FAILED TO CONNECT TO NETWORK");
 		}
 		else
 		{
-			modem.write(str, sizeof(str));
+			modem.write(str, strlen(str));
 		}
 
 		_delay_ms(100);

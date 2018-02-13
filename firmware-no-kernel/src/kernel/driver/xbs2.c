@@ -17,6 +17,8 @@
 #define XB_DIN		3
 #define XB_DOUT		4
 
+#define XBS2_BROADCAST_MAX_HOPS 0x00
+
 static modem_t *modem;
 
 static uint8_t frames[3][30];
@@ -30,10 +32,6 @@ transmit(uint8_t byte)
 	uint8_t res;
 
 	res = spi_transmit(byte);
-
-#ifdef SUPER_DEBUG
-	printf(">> %.2X\n", res);
-#endif
 
 	if (res == 0x7E)
 	{
@@ -102,11 +100,13 @@ xbs2_connect(char psk[], uint16_t size)
 	if (size)
 		return -1;
 
+	// CONFIGURE AS END DEVICE
 	cmd[0] = 'S';
 	cmd[1] = 'M';
 	args[0] = 1;
 	xbs2_at(cmd, args, 1);
 
+	// QUERY NETWORK STATUS
 	cmd[0] = 'A';
 	cmd[1] = 'I';
 	fid = xbs2_at(cmd, NULL, 0);
@@ -195,8 +195,52 @@ xbs2_get_frame_by_id(uint8_t id)
 }
 
 void
-xbs2_write(char msg[], uint16_t length)
+xbs2_write(char msg[], uint16_t size)
 {
+	const uint8_t broadcast[] =
+	{
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0xFF, 0xFF
+	};
+
+	const uint8_t dest_unk[] =
+	{
+		0xFF, 0xFE
+	};
+
+	uint8_t *pkt, fid;
+	uint16_t length = 14 + size;
+	xbs2_frame_t f;
+
+	pkt = malloc(sizeof(length + 4));
+	pkt[0] = 0x7E;
+	pkt[1] = (length >> 8);
+	pkt[2] = (length & 0xFF);
+	pkt[3] = 0x10;
+	pkt[4] = 0x00;
+	for (uint8_t i = 0; i < 8; i++)
+		pkt[5 + i] = broadcast[i];
+	for (uint8_t i = 0; i < 2; i++)
+		pkt[13 + i] = dest_unk[i];
+	pkt[15] = XBS2_BROADCAST_MAX_HOPS;
+	pkt[16] = 0x00;
+	for (uint8_t i = 0; i < size; i++)
+		pkt[17 + i] = msg[i];
+
+	fid = xbs2_emit(pkt, length + 4);
+	_delay_ms(1);
+	for (uint8_t i = 0; i < 3; i++)
+		xbs2_update();
+	f = xbs2_get_frame_by_id(fid);
+
+	if (f.pkt[8] == 0x22)
+	{
+		puts("<MODEM> NOT JOINED TO A NETWORK");
+		printf("\tDIED ON:%s\n", msg);
+	}
+
+	free(pkt);
+/*
 	uint16_t size = 14 + length;
 	printf("<MODEM> TX 7E %0.2X %0.2X 10 03 ",
 		(uint8_t) (size >> 8),
@@ -208,44 +252,39 @@ xbs2_write(char msg[], uint16_t length)
 	}
 	printf("(%d)", size);
 	printf("<MODEM> MSG %s", msg);
+	*/
 }
 
 uint8_t
-xbs2_emit(uint8_t pkt[], uint8_t argc)
+xbs2_emit(uint8_t pkt[], uint16_t length)
 {
 	static uint8_t id = 0;
 
+	uint16_t size;
 	uint8_t chksum;
 
+	size = (pkt[1] << 8) + pkt[2];
 	chksum = 0xFF;
 
 	if (!id)
 		++id;
 
 	pkt[4] = id++;
-#ifdef DEBUG
-	printf("<MODEM> TX %c%c ", (char)pkt[5], (char)pkt[6]);
-#endif
-	for (int i = 3; i < 10; i++)
-	{
-#ifdef DEBUG
-		printf("%.2X ", pkt[i]);
+	for (int i = 3; i < length - 1; i++)
 		chksum -= pkt[i];
-#endif
-	}
-#ifdef DEBUG
-	puts("");
-#endif
-	pkt[9] = chksum;
+
+	pkt[length - 1] = chksum;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 	{
 		PORTA &= ~(_BV(XB_CS));
-		for (int i = 0; i < 7; i++)
+		printf("<MODEM> TX ");
+		for (int i = 0; i < length; i++)
+		{
+			printf("%.2X ", pkt[i]);
 			transmit(pkt[i]);
-		for (int i = 0; i < argc; i++)
-			transmit(pkt[7 + i]);
-		transmit(pkt[9]);
+		}
+		puts("<<<");
 		PORTA |= _BV(XB_CS);
 	}
 
@@ -273,7 +312,7 @@ xbs2_at(
 	for (uint8_t i = 0; i < argc; i++)
 		pkt[7 + i] = args[i];
 
-	fid = xbs2_emit(pkt, argc);
+	fid = xbs2_emit(pkt, length + 4);
 
 	return fid;
 }
